@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Net.Http;
 using System.Threading.Tasks;
 using static System.Runtime.InteropServices.JavaScript.JSType;
@@ -12,7 +12,7 @@ class Program
         while (true)
         {
             Console.WriteLine("Podaj nazwe miasta lub 'quit' żeby wyjść :");
-            string cityName = Console.ReadLine();
+            string? cityName = Console.ReadLine();
 
             if (cityName.ToLower() == "quit")
             {
@@ -45,7 +45,7 @@ class Program
 
                         double cityLatitude = locationData[0].lat;
                         double cityLongitude = locationData[0].lon;
-
+                        Console.WriteLine($"{cityLatitude} {cityLongitude}");   
                         string weatherApiUrl = $"https://api.openweathermap.org/data/2.5/weather?lat={cityLatitude}&lon={cityLongitude}&appid={apiKey}&units=metric";
 
                         HttpResponseMessage weatherResponse = await client.GetAsync(weatherApiUrl);
@@ -55,7 +55,21 @@ class Program
                             string weatherResponseBody = await weatherResponse.Content.ReadAsStringAsync();
                             dynamic weatherData = Newtonsoft.Json.JsonConvert.DeserializeObject(weatherResponseBody);
                             double temperature = weatherData.main.temp;
+                            double wisillity = weatherData.visibility;
                             Console.WriteLine($"Aktualna temperatura w {cityName}: {temperature}°C");
+                           // string ok = weatherData.weather;
+                           // Console.WriteLine($"Pogoda to {ok}");
+                            double wisible2 = wisillity / 1000;
+                            Console.WriteLine($"Obszar widzialny to {wisible2} km lub {wisillity} m");
+                            double wiatr1 = weatherData.wind.speed;
+                            double wiatrkont = weatherData.wind.deg;
+                            Console.WriteLine($"Prendkość wiatru to {wiatr1} km, od strony {wiatrkont}");       
+                            int cisnienie = weatherData.main.pressure;
+                            Console.WriteLine($"Jest {cisnienie} hPa");
+                            double chmury = weatherData.clouds.all;
+                            Console.WriteLine($"Zachurzenie w tym miejscu wynosi {chmury} %");
+                            double wilgotość = weatherData.main.humidity;
+                            Console.WriteLine($"Wilgotność wynośi {wilgotość} %");
                         }
                         else
                         {
