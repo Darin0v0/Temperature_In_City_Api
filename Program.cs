@@ -44,8 +44,8 @@ class Program
                             double cityLatitude = (double)locationData[0]["lat"];
                             double cityLongitude = (double)locationData[0]["lon"];
 
-                            string weatherApiUrl = $"https://api.openweathermap.org/data/2.5/weather?lat={cityLatitude}&lon={cityLongitude}&appid={apiKey}&units=metric";
-                            string airQualityApiUrl = $"http://api.openweathermap.org/data/2.5/air_pollution?lat={cityLatitude}&lon={cityLongitude}&appid={apiKey}";
+                            string weatherApiUrl = $"https://api.openweathermap.org/data/2.5/weather?lat={cityLatitude}&lon={cityLongitude}&appid={apiKey}&units=metric&lang=pl";
+                            string airQualityApiUrl = $"http://api.openweathermap.org/data/2.5/air_pollution?lat={cityLatitude}&lon={cityLongitude}&appid={apiKey}&lang=pl";
                             string NexDayApiUrl = $"https://api.openweathermap.org/data/2.5/forecast?lat={cityLatitude}&lon={cityLongitude}&appid={apiKey}&units=metric";
 
                             HttpResponseMessage weatherResponse = await client.GetAsync(weatherApiUrl);
@@ -56,25 +56,27 @@ class Program
                             {
                                 string weatherResponseBody = await weatherResponse.Content.ReadAsStringAsync();
                                 string AirQualityBody = await AirResponse.Content.ReadAsStringAsync();
-                                //string NextDayBody = await NextDay.Content.ReadAsStringAsync();
-
-                                //JObject NextData = JObject.Parse(NextDayBody);
                                 JObject AirData = JObject.Parse(AirQualityBody);
                                 JObject weatherData = JObject.Parse(weatherResponseBody);
 
-                                int Quality = (int)AirData["list"][0]["main"]["aqi"];
+                                int? Quality = (int?)AirData["list"][0]["main"]["aqi"];
                                 double temperature = (double)weatherData["main"]["temp"];
-                                int visibility = (int)weatherData["visibility"];
+                                double tempfeels = (double)weatherData["main"]["feels_like"];
+                                int  visibility = (int)weatherData["visibility"];
                                 double visibleKm = visibility / 1000.0;
                                 double windSpeed = (double)weatherData["wind"]["speed"];
-                                int windDirection = (int)weatherData["wind"]["deg"];
-                                int pressure = (int)weatherData["main"]["pressure"];
-                                int cloudiness = (int)weatherData["clouds"]["all"];
-                                int humidity = (int)weatherData["main"]["humidity"];
+                                int? windDirection = (int?)weatherData["wind"]["deg"];
+                                int? pressure = (int?)weatherData["main"]["pressure"];
+                                int? cloudiness = (int?)weatherData["clouds"]["all"];
+                                int? humidity = (int?)weatherData["main"]["humidity"];
+                                string weatherDescription = (string)weatherData["weather"][0]["description"];
+                                string weatherMain = (string)weatherData["weather"][0]["main"];
                                 string a = "";
-                                Console.WriteLine($"Aktualna temperatura w {cityName}: {temperature}°C");
+
+                                Console.WriteLine($"Pogoda:{weatherMain}, {weatherDescription}");
+                                Console.WriteLine($"W {cityName} jest {temperature} stopni, a wyczuwalna to {tempfeels}");
                                 Console.WriteLine($"Obszar widzialny to {visibleKm} km lub {visibility} m");
-                                Console.WriteLine($"Prędkość wiatru to {windSpeed} km/h, kierunek {windDirection}°");
+                                Console.WriteLine($"Prędkość wiatru to {windSpeed * 3.6} km/h {windSpeed} m/s , kierunek {windDirection}°");
                                 Console.WriteLine($"Ciśnienie wynosi {pressure} hPa");
                                 Console.WriteLine($"Zachmurzenie wynosi {cloudiness} %");
                                 Console.WriteLine($"Wilgotność wynosi {humidity} %");
@@ -99,27 +101,38 @@ class Program
                                     a = "Tragiczna";
                                 }
                                 Console.WriteLine($"Jakość powietsza {a}");
-                                Console.WriteLine("Pokazać dokładniejsze dane dotyczące powietrza");
+                                Console.WriteLine("Pokazać dokładniejsze dane");
                                 Console.WriteLine("1-tak, 2-nie");
-                                int Input = int.Parse(Console.ReadLine());
+                                int? Input = int.Parse(Console.ReadLine());
                                 if(Input == 1)
                                 {
-                                    int coQ = (int)AirData["list"][0]["components"]["co"];
-                                    Console.WriteLine($"co: {coQ}");
-                                    int noQ = (int)AirData["list"][0]["components"]["no"];
-                                    Console.WriteLine($"no: {noQ}");
-                                    int no2Q = (int)AirData["list"][0]["components"]["no2"];
-                                    Console.WriteLine($"no2: {no2Q}");
-                                    int o3Q = (int)AirData["list"][0]["components"]["o3"];
-                                    Console.WriteLine($"o3: {o3Q}");
-                                    int so2Q = (int)AirData["list"][0]["components"]["so2"];
-                                    Console.WriteLine($"so2: {so2Q}");
-                                    int pm2_5 = (int)AirData["list"][0]["components"]["pm2_5"];
-                                    Console.WriteLine($"pm2-5: {pm2_5}");
-                                    int pm10 = (int)AirData["list"][0]["components"]["pm10"];
-                                    Console.WriteLine($"pm10: {pm10}");
-                                    int nh3 = (int)AirData["list"][0]["components"]["nh3"];
-                                    Console.WriteLine($"nh3: {nh3}");
+                                    Console.Clear();
+                                    double coQ = (double)AirData["list"][0]["components"]["co"];
+                                    Console.WriteLine($"co: {coQ} μg / m3");
+                                    double noQ = (double)AirData["list"][0]["components"]["no"];
+                                    Console.WriteLine($"no: {noQ}  μg / m3");
+                                    double no2Q = (double)AirData["list"][0]["components"]["no2"];
+                                    Console.WriteLine($"no2: {no2Q}  μg / m3");
+                                    double o3Q = (double)AirData["list"][0]["components"]["o3"];
+                                    Console.WriteLine($"o3: {o3Q}  μg / m3");
+                                    double so2Q = (double)AirData["list"][0]["components"]["so2"];
+                                    Console.WriteLine($"so2: {so2Q} μg / m3");
+                                    double pm2_5 = (double)AirData["list"][0]["components"]["pm2_5"];
+                                    Console.WriteLine($"pm2-5: {pm2_5}  μg / m3");
+                                    double pm10 = (double)AirData["list"][0]["components"]["pm10"];
+                                    Console.WriteLine($"pm10: {pm10} μg / m3");
+                                    double nh3 = (double)AirData["list"][0]["components"]["nh3"];
+                                    Console.WriteLine($"nh3: {nh3} μg / m3");
+                                    double tempmin = (double)weatherData["main"]["temp_min"];
+                                    double tempmax = (double)weatherData["main"]["temp_max"];
+                                    Console.WriteLine($"temperatura min: {tempmin}, max: {tempmax}");
+                                    Console.WriteLine($"{cityName} znajduje się na: {cityLatitude}  :  {cityLongitude}");
+                                    int czas = (int)weatherData["timezone"];
+                                    Console.WriteLine($"jesteś w +{czas / 3600} strefie czasowej");
+                                    string sunrise = weatherData["sys"]["sunrise"].ToString();
+                                    string sunset = weatherData["sys"]["sunset"].ToString();
+                                    string sunsetTime = $"{sunset.Substring(0, 2)}:{sunset.Substring(2, 2)}:{sunset.Substring(4, 2)}";
+                                    Console.WriteLine($"Czas zachodu słońca: {sunsetTime}");
                                 }
 
                             }
