@@ -1,7 +1,7 @@
 using System;
 using System.Net.Http;
 using System.Threading.Tasks;
-using static System.Runtime.InteropServices.JavaScript.JSType;
+using Newtonsoft.Json.Linq;
 
 class Program
 {
@@ -11,25 +11,21 @@ class Program
 
         while (true)
         {
-            Console.WriteLine("Podaj nazwe miasta lub 'quit' żeby wyjść :");
+            Console.WriteLine("Podaj nazwę miasta lub 'quit' żeby wyjść:");
             string? cityName = Console.ReadLine();
 
-            if (cityName.ToLower() == "quit")
+            if (cityName?.ToLower() == quitCommand)
             {
                 break;
             }
-            
+
             if (double.TryParse(cityName, out _))
             {
                 Console.WriteLine("Nieprawidłowa nazwa miasta. Proszę podać nazwę miasta, a nie liczbę.");
                 continue;
             }
 
-
-
-            // Twój klucz API
             string apiKey = "32b8338c9c1fdc43d190e72ea7ce9b5f";
-
             string geoApiUrl = $"http://api.openweathermap.org/geo/1.0/direct?q={cityName}&limit=1&appid={apiKey}";
 
             using (HttpClient client = new HttpClient())
@@ -41,39 +37,100 @@ class Program
                     if (geoResponse.IsSuccessStatusCode)
                     {
                         string geoResponseBody = await geoResponse.Content.ReadAsStringAsync();
-                        dynamic locationData = Newtonsoft.Json.JsonConvert.DeserializeObject(geoResponseBody);
+                        JArray locationData = JArray.Parse(geoResponseBody);
 
-                        double cityLatitude = locationData[0].lat;
-                        double cityLongitude = locationData[0].lon;
-                        Console.WriteLine($"{cityLatitude} {cityLongitude}");   
-                        string weatherApiUrl = $"https://api.openweathermap.org/data/2.5/weather?lat={cityLatitude}&lon={cityLongitude}&appid={apiKey}&units=metric";
-
-                        HttpResponseMessage weatherResponse = await client.GetAsync(weatherApiUrl);
-
-                        if (weatherResponse.IsSuccessStatusCode)
+                        if (locationData.Count > 0)
                         {
-                            string weatherResponseBody = await weatherResponse.Content.ReadAsStringAsync();
-                            dynamic weatherData = Newtonsoft.Json.JsonConvert.DeserializeObject(weatherResponseBody);
-                            double temperature = weatherData.main.temp;
-                            double wisillity = weatherData.visibility;
-                            Console.WriteLine($"Aktualna temperatura w {cityName}: {temperature}°C");
-                           // string ok = weatherData.weather;
-                           // Console.WriteLine($"Pogoda to {ok}");
-                            double wisible2 = wisillity / 1000;
-                            Console.WriteLine($"Obszar widzialny to {wisible2} km lub {wisillity} m");
-                            double wiatr1 = weatherData.wind.speed;
-                            double wiatrkont = weatherData.wind.deg;
-                            Console.WriteLine($"Prendkość wiatru to {wiatr1} km, od strony {wiatrkont}");       
-                            int cisnienie = weatherData.main.pressure;
-                            Console.WriteLine($"Jest {cisnienie} hPa");
-                            double chmury = weatherData.clouds.all;
-                            Console.WriteLine($"Zachurzenie w tym miejscu wynosi {chmury} %");
-                            double wilgotość = weatherData.main.humidity;
-                            Console.WriteLine($"Wilgotność wynośi {wilgotość} %");
+                            double cityLatitude = (double)locationData[0]["lat"];
+                            double cityLongitude = (double)locationData[0]["lon"];
+
+                            string weatherApiUrl = $"https://api.openweathermap.org/data/2.5/weather?lat={cityLatitude}&lon={cityLongitude}&appid={apiKey}&units=metric";
+                            string airQualityApiUrl = $"http://api.openweathermap.org/data/2.5/air_pollution?lat={cityLatitude}&lon={cityLongitude}&appid={apiKey}";
+                            string NexDayApiUrl = $"https://api.openweathermap.org/data/2.5/forecast?lat={cityLatitude}&lon={cityLongitude}&appid={apiKey}&units=metric";
+
+                            HttpResponseMessage weatherResponse = await client.GetAsync(weatherApiUrl);
+                            HttpResponseMessage AirResponse = await client.GetAsync(airQualityApiUrl);
+                            HttpResponseMessage NextDay = await client.GetAsync(NexDayApiUrl);
+
+                            if (weatherResponse.IsSuccessStatusCode && AirResponse.IsSuccessStatusCode && NextDay.IsSuccessStatusCode)
+                            {
+                                string weatherResponseBody = await weatherResponse.Content.ReadAsStringAsync();
+                                string AirQualityBody = await AirResponse.Content.ReadAsStringAsync();
+                                //string NextDayBody = await NextDay.Content.ReadAsStringAsync();
+
+                                //JObject NextData = JObject.Parse(NextDayBody);
+                                JObject AirData = JObject.Parse(AirQualityBody);
+                                JObject weatherData = JObject.Parse(weatherResponseBody);
+
+                                int Quality = (int)AirData["list"][0]["main"]["aqi"];
+                                double temperature = (double)weatherData["main"]["temp"];
+                                int visibility = (int)weatherData["visibility"];
+                                double visibleKm = visibility / 1000.0;
+                                double windSpeed = (double)weatherData["wind"]["speed"];
+                                int windDirection = (int)weatherData["wind"]["deg"];
+                                int pressure = (int)weatherData["main"]["pressure"];
+                                int cloudiness = (int)weatherData["clouds"]["all"];
+                                int humidity = (int)weatherData["main"]["humidity"];
+                                string a = "";
+                                Console.WriteLine($"Aktualna temperatura w {cityName}: {temperature}°C");
+                                Console.WriteLine($"Obszar widzialny to {visibleKm} km lub {visibility} m");
+                                Console.WriteLine($"Prędkość wiatru to {windSpeed} km/h, kierunek {windDirection}°");
+                                Console.WriteLine($"Ciśnienie wynosi {pressure} hPa");
+                                Console.WriteLine($"Zachmurzenie wynosi {cloudiness} %");
+                                Console.WriteLine($"Wilgotność wynosi {humidity} %");
+                                if(Quality == 1)
+                                {
+                                    a = "Wspaniała";
+                                }
+                                else if(Quality == 2)
+                                {
+                                    a = "Dobra";
+                                }
+                                else if(Quality == 3)
+                                {
+                                    a = "Średina";
+                                }
+                                else if (Quality == 4)
+                                {
+                                    a = "Słaba";
+                                }
+                                else if(Quality == 5)
+                                {
+                                    a = "Tragiczna";
+                                }
+                                Console.WriteLine($"Jakość powietsza {a}");
+                                Console.WriteLine("Pokazać dokładniejsze dane dotyczące powietrza");
+                                Console.WriteLine("1-tak, 2-nie");
+                                int Input = int.Parse(Console.ReadLine());
+                                if(Input == 1)
+                                {
+                                    int coQ = (int)AirData["list"][0]["components"]["co"];
+                                    Console.WriteLine($"co: {coQ}");
+                                    int noQ = (int)AirData["list"][0]["components"]["no"];
+                                    Console.WriteLine($"no: {noQ}");
+                                    int no2Q = (int)AirData["list"][0]["components"]["no2"];
+                                    Console.WriteLine($"no2: {no2Q}");
+                                    int o3Q = (int)AirData["list"][0]["components"]["o3"];
+                                    Console.WriteLine($"o3: {o3Q}");
+                                    int so2Q = (int)AirData["list"][0]["components"]["so2"];
+                                    Console.WriteLine($"so2: {so2Q}");
+                                    int pm2_5 = (int)AirData["list"][0]["components"]["pm2_5"];
+                                    Console.WriteLine($"pm2-5: {pm2_5}");
+                                    int pm10 = (int)AirData["list"][0]["components"]["pm10"];
+                                    Console.WriteLine($"pm10: {pm10}");
+                                    int nh3 = (int)AirData["list"][0]["components"]["nh3"];
+                                    Console.WriteLine($"nh3: {nh3}");
+                                }
+
+                            }
+                            else
+                            {
+                                Console.WriteLine("Nieudane zapytanie do API pogodowego.");
+                            }
                         }
                         else
                         {
-                            Console.WriteLine("Nieudane zapytanie do API pogodowego");
+                            Console.WriteLine("Nie znaleziono danych dla podanego miasta.");
                         }
                     }
                     else
@@ -82,6 +139,10 @@ class Program
                     }
                 }
                 catch (HttpRequestException e)
+                {
+                    Console.WriteLine($"Błąd HttpRequest: {e.Message}");
+                }
+                catch (Exception e)
                 {
                     Console.WriteLine($"Błąd: {e.Message}");
                 }
