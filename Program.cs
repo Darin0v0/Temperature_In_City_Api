@@ -1,7 +1,9 @@
 using System;
+using System.Diagnostics;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
+using static System.Net.WebRequestMethods;
 
 class Program
 {
@@ -132,7 +134,7 @@ class Program
                                     }
                                 }
 
-                                Console.WriteLine("Pokazać dokładniejsze dane na temat jakości powietrza?");
+                                Console.WriteLine("Pokazać dokładniejsze dane?");
                                 Console.WriteLine("1 - tak, 2 - nie");
                                 input = int.Parse(Console.ReadLine());
                                 if (input == 1)
@@ -156,9 +158,19 @@ class Program
                                     double tempmin = (double)weatherData["main"]["temp_min"];
                                     double tempmax = (double)weatherData["main"]["temp_max"];
                                     Console.WriteLine($"temperatura min: {tempmin}, max: {tempmax}");
-                                    Console.WriteLine($"{cityName} znajduje się na: {cityLatitude}  :  {cityLongitude}");
-                                    string baza = (string)weatherData["base"];
-                                    Console.WriteLine($"Mierzone ze stacji: {baza}");
+                                    Console.WriteLine($"{cityName} znajduje się na: {cityLatitude.ToString().Replace(',', '.')} : {cityLongitude.ToString().Replace(',', '.')}");
+
+                                    string UrlMap = $"https://earth.google.com/web/search/{cityLatitude.ToString().Replace(',', '.')},{cityLongitude.ToString().Replace(',', '.')}";
+                                    var startInfo = new ProcessStartInfo
+                                    {
+                                        FileName = UrlMap,
+                                        UseShellExecute = true
+                                    };
+
+                                    Process.Start(startInfo);
+
+                                    Console.WriteLine(UrlMap);
+
                                     int czas = (int)weatherData["timezone"];
                                     Console.WriteLine($"jesteś w +{czas / 3600} strefie czasowej");
                                     string sunrise = weatherData["sys"]["sunrise"].ToString();
